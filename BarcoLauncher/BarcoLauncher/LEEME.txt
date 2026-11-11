@@ -1,0 +1,45 @@
+BARCO LAUNCHER - pantalla de inicio con la familia y el barquito de papel
+=======================================================================
+
+QUE HACE
+- Arriba: la foto de la familia con el mar de papel. El barquito flota sobre las olas.
+  * Coche parado: el barco se mece en el sitio.
+  * Coche en marcha: las olas van mas rapido y el barco navega por la pantalla,
+    cada vez mas rapido cuanto mas corre el coche (usa el GPS del equipo).
+- Abajo: tus aplicaciones (Navegacion, Musica, Bluetooth, Ajustes del vehiculo, CarPlay...).
+  Se desliza con el dedo hacia los lados.
+- Modo prueba: manten pulsado 1 segundo sobre la escena para simular 20 / 60 / 120 km/h
+  con el coche parado. Otra pulsacion larga cambia de velocidad; al final se apaga.
+
+COMO COMPILARLO GRATIS (sin instalar nada) CON GITHUB
+1. Crea cuenta gratis en https://github.com (si no tienes).
+2. Pulsa "+" (arriba a la derecha) > "New repository". Ponle de nombre BarcoLauncher.
+   Deja "Public" o "Private" (da igual) y pulsa "Create repository".
+3. En la pagina del repositorio pulsa "uploading an existing file" y arrastra TODO el
+   contenido de esta carpeta (incluida la carpeta oculta .github). Abajo, "Commit changes".
+   - Si no se sube la carpeta .github: "Add file" > "Create new file", escribe como nombre
+     .github/workflows/build.yml y pega el contenido del archivo build.yml.
+4. Ve a la pestana "Actions". Se pondra a compilar solo (tarda unos 3-5 minutos).
+   Si no arranca: "Compilar APK" > "Run workflow".
+5. Cuando salga el tick verde, entra en esa ejecucion y abajo, en "Artifacts", descarga
+   "BarcoLauncher-apk". Es un zip con dentro app-debug.apk.
+
+INSTALARLO EN EL EQUIPO DEL COCHE
+1. Copia app-debug.apk a un pendrive (FAT32/exFAT) y conectalo al coche.
+2. En el equipo busca un gestor de archivos, abre el pendrive y toca el APK.
+   Si pide permiso para "instalar apps de origen desconocido", activalo.
+3. Abre la app "Barco" como una app normal. Te pedira permiso de ubicacion: Aceptar.
+4. PARA QUE SALGA SOLA AL ENCENDER (en vez de la pantalla del reloj y la velocidad):
+   la app ya esta preparada como "pantalla de inicio". Pulsa el boton de INICIO del equipo;
+   saldra un cuadro para elegir entre el launcher original y "Barco". Elige "Barco" y
+   pulsa "Siempre". A partir de ahi, al encender y al pulsar Inicio saldra el barco.
+   - Si no sale el cuadro: Ajustes > Aplicaciones > Aplicaciones predeterminadas >
+     Aplicacion de inicio (o "Home app") y elige Barco.
+   - Para volver al original: la misma ruta, eligiendo el launcher de siempre.
+   - Algunos equipos chinos traen su launcher bloqueado; en ese caso Barco se queda como
+     app normal y habria que buscar otra via (avisame y lo vemos).
+
+COSAS QUE SE PUEDEN CAMBIAR
+- Tamano del barco, velocidad con la que cruza la pantalla: arriba del archivo
+  app/src/main/java/com/barco/launcher/SceneView.kt
+- Que apps salen primero en la barra: lista PRIORITY en MainActivity.kt
