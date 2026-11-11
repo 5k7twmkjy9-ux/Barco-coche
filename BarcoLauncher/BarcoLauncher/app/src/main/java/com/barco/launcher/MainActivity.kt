@@ -2,6 +2,7 @@ package com.barco.launcher
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
@@ -47,6 +48,8 @@ class MainActivity : Activity() {
     private lateinit var bar: HorizontalScrollView
     private lateinit var row: LinearLayout
     private var barHeight = 0
+    private var itemWidthPx = 0
+    private var shownKeys: List<String> = emptyList()
 
     private var locationManager: LocationManager? = null
     private var lastFixMs = 0L
@@ -170,15 +173,24 @@ class MainActivity : Activity() {
     private fun buildApps() {
         val pm = packageManager
         val query = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        val saved = loadOrder()
         val apps: List<Pair<ResolveInfo, String>> = pm.queryIntentActivities(query, 0)
             .filter { it.activityInfo.packageName != packageName }
             .map { it to it.loadLabel(pm).toString() }
-            .sortedWith(compareBy<Pair<ResolveInfo, String>>({ priorityOf(it.second) }, { it.second.lowercase() }))
+            .sortedWith(
+                compareBy<Pair<ResolveInfo, String>>(
+                    { savedIndex(saved, keyOf(it.first)) },
+                    { priorityOf(it.second) },
+                    { it.second.lowercase() }
+                )
+            )
 
         row.removeAllViews()
+        shownKeys = apps.map { keyOf(it.first) }
 
         val iconSize = (barHeight * 0.50f).toInt()
         val itemWidth = (iconSize * 1.9f).toInt()
+        itemWidthPx = itemWidth
         val labelSize = barHeight * 0.115f
 
         for ((info, label) in apps) {
@@ -225,7 +237,66 @@ class MainActivity : Activity() {
                 }
             }
 
+            item.setOnLongClickListener {
+                item.alpha = 1f
+                showMoveDialog(keyOf(info), label)
+                true
+            }
+
             row.addView(item, LinearLayout.LayoutParams(itemWidth, ViewGroup.LayoutParams.MATCH_PARENT))
         }
+    }
+
+    // ------------------------------------------------- Orden de las apps
+
+    private fun keyOf(info: ResolveInfo): String =
+        info.activityInfo.packageName + "/" + info.activityInfo.name
+
+    private fun savedIndex(saved: List<String>, key: String): Int {
+        val i = saved.indexOf(key)
+        return if (i >= 0) i else Int.MAX_VALUE
+    }
+
+    private fun loadOrder(): List<String> {
+        val raw = getSharedPreferences("barco", MODE_PRIVATE).getString("order", "") ?: ""
+        return if (raw.isEmpty()) emptyList() else raw.split("\n")
+    }
+
+    private fun saveOrder(keys: List<String>?) {
+        val e = getSharedPreferences("barco", MODE_PRIVATE).edit()
+        if (keys == null) e.remove("order") else e.putString("order", keys.joinToString("\n"))
+        e.apply()
+    }
+
+    /** Menu al mantener pulsada una app: mover a izquierda / derecha / principio. */
+    private fun showMoveDialog(key: String, label: String) {
+        val options = arrayOf(
+            "\u2190  Mover a la izquierda",
+            "\u2192  Mover a la derecha",
+            "\u21E4  Llevar al principio",
+            "Restablecer el orden de todas"
+        )
+        AlertDialog.Builder(this)
+            .setTitle(label)
+            .setItems(options) { _, which ->
+                val list = shownKeys.toMutableList()
+                val i = list.indexOf(key)
+                var again = true
+                when (which) {
+                    0 -> if (i > 0) { list.removeAt(i); list.add(i - 1, key) }
+                    1 -> if (i in 0 until list.size - 1) { list.removeAt(i); list.add(i + 1, key) }
+                    2 -> if (i > 0) { list.removeAt(i); list.add(0, key) }
+                    3 -> { saveOrder(null); again = false }
+                }
+                if (which != 3) saveOrder(list)
+                buildApps()
+                val pos = shownKeys.indexOf(key)
+                if (pos >= 0) {
+                    bar.post { bar.smoothScrollTo(maxOf(0, pos * itemWidthPx - itemWidthPx * 2), 0) }
+                }
+                if (again && pos >= 0) showMoveDialog(key, label)
+            }
+            .setNegativeButton("Listo", null)
+            .show()
     }
 }
